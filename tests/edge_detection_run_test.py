@@ -7,6 +7,7 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
 from geoh5py import Workspace
 from geoh5py.data import FilenameData
 from geoh5py.objects import Grid2D
@@ -15,6 +16,7 @@ from geoh5py.ui_json import InputFile
 from curve_apps import assets_path
 from curve_apps.edge_detection.driver import EdgeDetectionDriver
 from curve_apps.edge_detection.params import Parameters
+from curve_apps.edge_detection.uijson import EdgeUIJson
 
 
 def setup_example(workspace: Workspace):
@@ -106,3 +108,38 @@ def test_input_file(tmp_path: Path):
         assert edges is not None
 
         assert any(child for child in edges.children if isinstance(child, FilenameData))
+
+
+def test_uijson_class(tmp_path: Path):
+    workspace = Workspace.create(tmp_path / "test_edge_detection.geoh5")
+
+    grid, data = setup_example(workspace)
+
+    with workspace.open(mode="r+"):
+        grid_copy = grid.copy()
+
+    ifile = InputFile.read_ui_json(
+        assets_path() / "uijson/edge_detection.ui.json", validate=False
+    )
+    changes = {
+        "geoh5": workspace,
+        "objects": grid,
+        "data": data,
+        "line_length": 12,
+        "line_gap": 1,
+        "sigma": 1.0,
+        "export_as": "square",
+    }
+    for key, value in changes.items():
+        ifile.set_data_value(key, value)
+
+    ifile.write_ui_json(str(tmp_path / "test_edge_detection"))
+
+    uijson = EdgeUIJson(**ifile.ui_json)
+
+    assert uijson.objects.value.uid == grid.uid
+    assert uijson.data.value.uid == data.uid
+    assert uijson.data.parent == uijson.objects
+
+    with pytest.raises(ValueError, match="must be linked to the selected parent"):
+        uijson.data.value = grid_copy.children[0]
