@@ -61,7 +61,7 @@ def test_driver(tmp_path: Path):
     with workspace.open():
         edges = workspace.get_entity("square")[0]
 
-        assert len(edges.cells) == 4
+        assert len(edges.cells) == 4  # type: ignore
 
     # Repeat with different window size
 
@@ -74,7 +74,33 @@ def test_driver(tmp_path: Path):
     with workspace.open():
         edges = workspace.get_entity("square_32")[0]
 
-        assert len(edges.cells) == 22
+        assert len(edges.cells) == 22  # type: ignore
+
+
+def test_merge_length(tmp_path: Path):
+    workspace = Workspace.create(tmp_path / "test_edge_detection.geoh5")
+
+    grid, data = setup_example(workspace)
+    params = Parameters.build(
+        {
+            "geoh5": workspace,
+            "objects": grid,
+            "data": data,
+            "line_length": 12,
+            "line_gap": 1,
+            "sigma": 1,
+            "export_as": "square",
+            "merge_length": 10.0,
+        }
+    )
+
+    driver = EdgeDetectionDriver(params)
+    driver.run()
+
+    with workspace.open():
+        edges = workspace.get_entity("square")[0]
+
+        assert len(np.unique(edges.parts)) == 2  # type: ignore
 
 
 def test_input_file(tmp_path: Path):
@@ -104,5 +130,6 @@ def test_input_file(tmp_path: Path):
     with workspace.open():
         edges = workspace.get_entity("square")[0]
         assert edges is not None
+        assert hasattr(edges, "children")
 
         assert any(child for child in edges.children if isinstance(child, FilenameData))
