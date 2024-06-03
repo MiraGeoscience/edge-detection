@@ -20,7 +20,8 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from geoapps_utils.formatters import string_name
-from geoh5py.objects import Curve, Grid2D
+from geoh5py.data import Data
+from geoh5py.objects import Curve, Grid2D, ObjectBase
 from geoh5py.ui_json import InputFile, utils
 
 from curve_apps.contours.params import ContourParameters
@@ -49,7 +50,11 @@ class ContoursDriver(BaseCurveDriver):
 
         with utils.fetch_active_workspace(self.workspace, mode="r+"):
             logger.info("Generating contours ...")
-            contours = ContoursDriver.get_contours(self.params)
+            contours = ContoursDriver.get_contours(
+                self.params.source.objects,
+                self.params.source.data,
+                self.params.detection.contours,
+            )
             vertices, cells, values = extract_data(contours)
             if vertices:
                 locations = np.vstack(vertices)
@@ -74,15 +79,15 @@ class ContoursDriver(BaseCurveDriver):
             return curve
 
     @staticmethod
-    def get_contours(params: ContourParameters):
+    def get_contours(entity: ObjectBase, data: Data, levels: list[float]):
         """
         Calculate contour from source data.
 
-        :param params: Contour parameters
+        :param object: Object to extract contours from.
+        :param data: Data channel to use.
+        :param levels: Contour levels.
         """
 
-        entity = params.source.objects
-        data = params.source.data
         locations = entity.locations
         x, y = locations[:, :2].T
         axis = plt.axes()
@@ -92,7 +97,7 @@ class ContoursDriver(BaseCurveDriver):
                 x.reshape(entity.shape, order="F"),
                 y.reshape(entity.shape, order="F"),
                 data.values.reshape(entity.shape, order="F"),
-                levels=params.detection.contours,
+                levels=levels,
             )
         else:
             # TODO: Replace with scikit-image contour algorithm
@@ -100,7 +105,7 @@ class ContoursDriver(BaseCurveDriver):
                 x,
                 y,
                 data.values,
-                levels=params.detection.contours,
+                levels=levels,
             )
         return contours
 

@@ -37,7 +37,11 @@ def get_contour_data(tmp_path):
         "export_as": "my curve",
     }
     params = ContourParameters.build(params_dict)
-    contours = ContoursDriver.get_contours(params)
+    contours = ContoursDriver.get_contours(
+        entity=params.source.objects,
+        data=params.source.data,
+        levels=params.detection.contours,
+    )
 
     return contours, params
 
