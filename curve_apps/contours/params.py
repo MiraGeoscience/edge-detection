@@ -69,6 +69,9 @@ class ContourDetectionParameters(BaseModel):
         elif isinstance(val, str):
             fixed_contours = str2list(val)
 
+        elif val is None:
+            fixed_contours = None
+
         else:
             raise ValueError(
                 "Fixed contours must be a list of floats, "

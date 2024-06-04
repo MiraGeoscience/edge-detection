@@ -44,9 +44,7 @@ class ContoursDriver(BaseCurveDriver):
         super().__init__(parameters)
 
     def make_curve(self):
-        """
-        Make curve object from contours detected in source data.
-        """
+        """Make curve object from contours detected in source data."""
 
         with utils.fetch_active_workspace(self.workspace, mode="r+"):
             logger.info("Generating contours ...")
